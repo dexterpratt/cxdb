@@ -1,0 +1,15 @@
+name: cxdb_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.11
+  - pandas>=2.2.2
+  - networkx=3.3
+  - pip
+  - pip:
+    - ndex2>=3.9.0
+    - configparser>=7.1.0
+    - pytest>=8.1.1
+   nameN
+   
