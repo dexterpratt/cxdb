@@ -6,6 +6,7 @@ dependencies:
   - python>=3.11
   - pandas>=2.2.2
   - networkx=3.3
+  - ply>=3.11
   - pip
   - pip:
     - ndex2>=3.9.0

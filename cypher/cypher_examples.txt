@@ -1,0 +1,48 @@
+MATCH (keanu:Person {name:'Keanu Reeves'})
+RETURN keanu.name AS name, keanu.born AS born
+
+MATCH (people:Person)
+RETURN people
+LIMIT 5
+
+MATCH (bornInEighties:Person)
+WHERE bornInEighties.born >= 1980 AND bornInEighties.born < 1990
+RETURN bornInEighties.name as name, bornInEighties.born as born
+ORDER BY born DESC
+
+MATCH (m:Movie {title: 'The Matrix'})<-[d:DIRECTED]-(p:Person)
+RETURN p.name as director
+
+MATCH (tom:Person {name:'Tom Hanks'})-[r]->(m:Movie)
+RETURN type(r) AS type, m.title AS movie
+
+MATCH (:Person {name:'Tom Hanks'})-[r:!ACTED_IN]->(m:Movie)
+Return type(r) AS type, m.title AS movies
+
+MATCH (tom:Person {name:'Tom Hanks'})--{2}(colleagues:Person)
+RETURN DISTINCT colleagues.name AS name, colleagues.born AS bornIn
+ORDER BY bornIn
+LIMIT 5
+
+MATCH (p:Person {name:'Tom Hanks'})--{1,4}(colleagues:Person)
+RETURN DISTINCT colleagues.name AS name, colleagues.born AS bornIn
+ORDER BY bornIn, name
+LIMIT 5
+
+MATCH p = ALL SHORTEST (:Person {name:"Keanu Reeves"})--+(:Person {name:"Tom Cruise"})
+RETURN count(p) AS pathCount, length(p) AS pathLength
+
+MATCH (keanu:Person {name:'Keanu Reeves'})-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(coActors:Person),
+  (coActors:Person)-[:ACTED_IN]->(m2:Movie)<-[:ACTED_IN]-(cocoActors:Person)
+WHERE NOT (keanu)-[:ACTED_IN]->()<-[:ACTED_IN]-(cocoActors) AND keanu <> cocoActors
+RETURN cocoActors.name AS recommended, count(cocoActors) AS strength
+ORDER BY strength DESC
+LIMIT 7
+
+MATCH (:Person {name: 'Keanu Reeves'})-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(coActor:Person),
+  (coActor)-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(:Person {name:'Tom Hanks'})
+RETURN DISTINCT coActor.name AS coActor
+
+MATCH (n)
+DETACH DELETE n
+

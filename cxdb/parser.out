@@ -1,0 +1,307 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    AND
+    BY
+    LBRACE
+    LBRACKET
+    LIMIT
+    NOT
+    NUMBER
+    OR
+    ORDER
+    RBRACE
+    RBRACKET
+    RELATIONSHIP_BOTH
+    RELATIONSHIP_LEFT
+    RELATIONSHIP_RIGHT
+    SKIP
+
+Grammar
+
+Rule 0     S' -> query
+Rule 1     query -> match_clause where_clause return_clause
+Rule 2     match_clause -> MATCH node_pattern
+Rule 3     node_pattern -> LPAREN IDENTIFIER COLON IDENTIFIER RPAREN
+Rule 4     where_clause -> WHERE condition
+Rule 5     where_clause -> empty
+Rule 6     condition -> property_access EQUALS STRING
+Rule 7     property_access -> IDENTIFIER DOT IDENTIFIER
+Rule 8     return_clause -> RETURN return_items
+Rule 9     return_items -> IDENTIFIER
+Rule 10    return_items -> IDENTIFIER AS IDENTIFIER
+Rule 11    return_items -> IDENTIFIER COMMA return_items
+Rule 12    empty -> <empty>
+
+Terminals, with rules where they appear
+
+AND                  : 
+AS                   : 10
+BY                   : 
+COLON                : 3
+COMMA                : 11
+DOT                  : 7
+EQUALS               : 6
+IDENTIFIER           : 3 3 7 7 9 10 10 11
+LBRACE               : 
+LBRACKET             : 
+LIMIT                : 
+LPAREN               : 3
+MATCH                : 2
+NOT                  : 
+NUMBER               : 
+OR                   : 
+ORDER                : 
+RBRACE               : 
+RBRACKET             : 
+RELATIONSHIP_BOTH    : 
+RELATIONSHIP_LEFT    : 
+RELATIONSHIP_RIGHT   : 
+RETURN               : 8
+RPAREN               : 3
+SKIP                 : 
+STRING               : 6
+WHERE                : 4
+error                : 
+
+Nonterminals, with rules where they appear
+
+condition            : 4
+empty                : 5
+match_clause         : 1
+node_pattern         : 2
+property_access      : 6
+query                : 0
+return_clause        : 1
+return_items         : 8 11
+where_clause         : 1
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . query
+    (1) query -> . match_clause where_clause return_clause
+    (2) match_clause -> . MATCH node_pattern
+
+    MATCH           shift and go to state 3
+
+    query                          shift and go to state 1
+    match_clause                   shift and go to state 2
+
+state 1
+
+    (0) S' -> query .
+
+
+
+state 2
+
+    (1) query -> match_clause . where_clause return_clause
+    (4) where_clause -> . WHERE condition
+    (5) where_clause -> . empty
+    (12) empty -> .
+
+    WHERE           shift and go to state 5
+    RETURN          reduce using rule 12 (empty -> .)
+
+    where_clause                   shift and go to state 4
+    empty                          shift and go to state 6
+
+state 3
+
+    (2) match_clause -> MATCH . node_pattern
+    (3) node_pattern -> . LPAREN IDENTIFIER COLON IDENTIFIER RPAREN
+
+    LPAREN          shift and go to state 8
+
+    node_pattern                   shift and go to state 7
+
+state 4
+
+    (1) query -> match_clause where_clause . return_clause
+    (8) return_clause -> . RETURN return_items
+
+    RETURN          shift and go to state 10
+
+    return_clause                  shift and go to state 9
+
+state 5
+
+    (4) where_clause -> WHERE . condition
+    (6) condition -> . property_access EQUALS STRING
+    (7) property_access -> . IDENTIFIER DOT IDENTIFIER
+
+    IDENTIFIER      shift and go to state 13
+
+    condition                      shift and go to state 11
+    property_access                shift and go to state 12
+
+state 6
+
+    (5) where_clause -> empty .
+
+    RETURN          reduce using rule 5 (where_clause -> empty .)
+
+
+state 7
+
+    (2) match_clause -> MATCH node_pattern .
+
+    WHERE           reduce using rule 2 (match_clause -> MATCH node_pattern .)
+    RETURN          reduce using rule 2 (match_clause -> MATCH node_pattern .)
+
+
+state 8
+
+    (3) node_pattern -> LPAREN . IDENTIFIER COLON IDENTIFIER RPAREN
+
+    IDENTIFIER      shift and go to state 14
+
+
+state 9
+
+    (1) query -> match_clause where_clause return_clause .
+
+    $end            reduce using rule 1 (query -> match_clause where_clause return_clause .)
+
+
+state 10
+
+    (8) return_clause -> RETURN . return_items
+    (9) return_items -> . IDENTIFIER
+    (10) return_items -> . IDENTIFIER AS IDENTIFIER
+    (11) return_items -> . IDENTIFIER COMMA return_items
+
+    IDENTIFIER      shift and go to state 16
+
+    return_items                   shift and go to state 15
+
+state 11
+
+    (4) where_clause -> WHERE condition .
+
+    RETURN          reduce using rule 4 (where_clause -> WHERE condition .)
+
+
+state 12
+
+    (6) condition -> property_access . EQUALS STRING
+
+    EQUALS          shift and go to state 17
+
+
+state 13
+
+    (7) property_access -> IDENTIFIER . DOT IDENTIFIER
+
+    DOT             shift and go to state 18
+
+
+state 14
+
+    (3) node_pattern -> LPAREN IDENTIFIER . COLON IDENTIFIER RPAREN
+
+    COLON           shift and go to state 19
+
+
+state 15
+
+    (8) return_clause -> RETURN return_items .
+
+    $end            reduce using rule 8 (return_clause -> RETURN return_items .)
+
+
+state 16
+
+    (9) return_items -> IDENTIFIER .
+    (10) return_items -> IDENTIFIER . AS IDENTIFIER
+    (11) return_items -> IDENTIFIER . COMMA return_items
+
+    $end            reduce using rule 9 (return_items -> IDENTIFIER .)
+    AS              shift and go to state 20
+    COMMA           shift and go to state 21
+
+
+state 17
+
+    (6) condition -> property_access EQUALS . STRING
+
+    STRING          shift and go to state 22
+
+
+state 18
+
+    (7) property_access -> IDENTIFIER DOT . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 23
+
+
+state 19
+
+    (3) node_pattern -> LPAREN IDENTIFIER COLON . IDENTIFIER RPAREN
+
+    IDENTIFIER      shift and go to state 24
+
+
+state 20
+
+    (10) return_items -> IDENTIFIER AS . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 25
+
+
+state 21
+
+    (11) return_items -> IDENTIFIER COMMA . return_items
+    (9) return_items -> . IDENTIFIER
+    (10) return_items -> . IDENTIFIER AS IDENTIFIER
+    (11) return_items -> . IDENTIFIER COMMA return_items
+
+    IDENTIFIER      shift and go to state 16
+
+    return_items                   shift and go to state 26
+
+state 22
+
+    (6) condition -> property_access EQUALS STRING .
+
+    RETURN          reduce using rule 6 (condition -> property_access EQUALS STRING .)
+
+
+state 23
+
+    (7) property_access -> IDENTIFIER DOT IDENTIFIER .
+
+    EQUALS          reduce using rule 7 (property_access -> IDENTIFIER DOT IDENTIFIER .)
+
+
+state 24
+
+    (3) node_pattern -> LPAREN IDENTIFIER COLON IDENTIFIER . RPAREN
+
+    RPAREN          shift and go to state 27
+
+
+state 25
+
+    (10) return_items -> IDENTIFIER AS IDENTIFIER .
+
+    $end            reduce using rule 10 (return_items -> IDENTIFIER AS IDENTIFIER .)
+
+
+state 26
+
+    (11) return_items -> IDENTIFIER COMMA return_items .
+
+    $end            reduce using rule 11 (return_items -> IDENTIFIER COMMA return_items .)
+
+
+state 27
+
+    (3) node_pattern -> LPAREN IDENTIFIER COLON IDENTIFIER RPAREN .
+
+    WHERE           reduce using rule 3 (node_pattern -> LPAREN IDENTIFIER COLON IDENTIFIER RPAREN .)
+    RETURN          reduce using rule 3 (node_pattern -> LPAREN IDENTIFIER COLON IDENTIFIER RPAREN .)
+
