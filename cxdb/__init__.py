@@ -1,11 +1,12 @@
 from .core import CXDB
 from .cypher import CypherExecutor
 from .ndex import NDExConnector
+from .cypher_executor import CypherQueryExecutor
 
 __version__ = "0.1.0"
 
 # Optional: define what gets imported with `from cxdb import *`
-__all__ = ['CXDB', 'CypherExecutor', 'NDExConnector']
+__all__ = ['CXDB', 'CypherExecutor', 'NDExConnector', CypherQueryExecutor]
 
 # Optional: any initialization code the package needs
 def initialize():

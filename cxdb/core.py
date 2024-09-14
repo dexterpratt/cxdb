@@ -1,6 +1,8 @@
 # cxdb/core.py
 
 import pandas as pd
+from cxdb.query_executor import CypherQueryExecutor
+
 
 class CXDB:
     def __init__(self):
@@ -8,6 +10,13 @@ class CXDB:
         self.edges = pd.DataFrame(columns=['source_id', 'target_id', 'relationship', 'properties'])
         self.next_node_id = 1
         self.node_names = set()
+        self.query_executor = CypherQueryExecutor(self)
+
+    def execute_cypher(self, query: str):
+        """
+        Execute a Cypher query and return the results.
+        """
+        return self.query_executor.execute(query)
 
     def add_node(self, name, type, properties=None):
         if name in self.node_names:
