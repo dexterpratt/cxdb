@@ -1,5 +1,5 @@
 import pytest
-from cxdb.cypher_parser import CypherParser
+from cxdb.cypher_parser import CypherParser, MatchClause
 from cxdb.cypher_exceptions import CypherSyntaxError, CypherSemanticError
 
 @pytest.fixture
@@ -19,7 +19,9 @@ def test_simple_match(parser):
     query = "MATCH (n:Person) RETURN n"
     result = parser.parse(query)
     assert result is not None
+    assert isinstance(result, MatchClause)
     assert result.match is not None
+    assert result.match.label == 'Person'
     assert result.return_ is not None
 
 def test_match_with_where(parser):
