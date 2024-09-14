@@ -6,8 +6,8 @@ from cxdb.cypher_exceptions import CypherLexerError
 class CypherLexer:
     tokens = [
         'IDENTIFIER', 'STRING', 'NUMBER',
-        'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE',
-        'COLON', 'COMMA', 'DOT', 'EQUALS'
+        'LPAREN', 'RPAREN', 'COLON', 'COMMA', 'DOT', 'EQUALS',
+        'GT', 'LT', 'GE', 'LE', 'NE'  # New comparison operators
     ]
 
     reserved = {
@@ -23,12 +23,15 @@ class CypherLexer:
 
     t_LPAREN = r'\('
     t_RPAREN = r'\)'
-    t_LBRACE = r'\{'
-    t_RBRACE = r'\}'
     t_COLON = r':'
     t_COMMA = r','
     t_DOT = r'\.'
     t_EQUALS = r'='
+    t_GT = r'>'
+    t_LT = r'<'
+    t_GE = r'>='
+    t_LE = r'<='
+    t_NE = r'<>'
 
     def t_IDENTIFIER(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
