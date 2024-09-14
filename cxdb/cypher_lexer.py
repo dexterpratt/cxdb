@@ -61,6 +61,7 @@ class CypherLexer:
     def t_error(self, t):
         raise CypherLexerError(f"Illegal character '{t.value[0]}'", t.lexpos)
 
+
     def build(self, **kwargs):
         self.lexer = lex.lex(module=self, **kwargs)
 

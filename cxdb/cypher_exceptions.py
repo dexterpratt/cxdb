@@ -20,4 +20,6 @@ class CypherSyntaxError(CypherParserError):
 
 class CypherSemanticError(CypherParserError):
     """Exception raised for semantic errors."""
-    pass
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)

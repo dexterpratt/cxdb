@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'AND AS BY COLON COMMA DOT EQUALS IDENTIFIER LBRACE LBRACKET LIMIT LPAREN MATCH NOT NUMBER OR ORDER RBRACE RBRACKET RELATIONSHIP_BOTH RELATIONSHIP_LEFT RELATIONSHIP_RIGHT RETURN RPAREN SKIP STRING WHEREquery : match_clause where_clause return_clausematch_clause : MATCH node_patternnode_pattern : LPAREN IDENTIFIER COLON IDENTIFIER RPARENwhere_clause : WHERE condition\n                        | emptycondition : property_access EQUALS STRINGproperty_access : IDENTIFIER DOT IDENTIFIERreturn_clause : RETURN return_itemsreturn_items : IDENTIFIER\n                        | IDENTIFIER AS IDENTIFIER\n                        | IDENTIFIER COMMA return_itemsempty :'
+_lr_signature = 'AND AS BY COLON COMMA DOT EQUALS IDENTIFIER LBRACE LBRACKET LIMIT LPAREN MATCH NOT NUMBER OR ORDER RBRACE RBRACKET RELATIONSHIP_BOTH RELATIONSHIP_LEFT RELATIONSHIP_RIGHT RETURN RPAREN SKIP STRING WHEREquery : match_clause where_clause return_clausematch_clause : MATCH node_patternnode_pattern : LPAREN IDENTIFIER COLON IDENTIFIER RPARENwhere_clause : WHERE condition\n                        | emptycondition : property_access EQUALS STRINGproperty_access : IDENTIFIER DOT IDENTIFIERreturn_clause : RETURN return_items\n                         | RETURNreturn_items : return_item\n                        | return_item COMMA return_itemsreturn_item : IDENTIFIER\n                       | IDENTIFIER AS IDENTIFIER\n                       | IDENTIFIER DOT IDENTIFIER\n                       | IDENTIFIER DOT IDENTIFIER AS IDENTIFIERempty :'
     
-_lr_action_items = {'MATCH':([0,],[3,]),'$end':([1,9,15,16,25,26,],[0,-1,-8,-9,-10,-11,]),'WHERE':([2,7,27,],[5,-2,-3,]),'RETURN':([2,4,6,7,11,22,27,],[-12,10,-5,-2,-4,-6,-3,]),'LPAREN':([3,],[8,]),'IDENTIFIER':([5,8,10,18,19,20,21,],[13,14,16,23,24,25,16,]),'EQUALS':([12,23,],[17,-7,]),'DOT':([13,],[18,]),'COLON':([14,],[19,]),'AS':([16,],[20,]),'COMMA':([16,],[21,]),'STRING':([17,],[22,]),'RPAREN':([24,],[27,]),}
+_lr_action_items = {'MATCH':([0,],[3,]),'$end':([1,9,10,15,16,17,27,28,29,32,],[0,-1,-9,-8,-10,-12,-11,-13,-14,-15,]),'WHERE':([2,7,30,],[5,-2,-3,]),'RETURN':([2,4,6,7,11,24,30,],[-16,10,-5,-2,-4,-6,-3,]),'LPAREN':([3,],[8,]),'IDENTIFIER':([5,8,10,19,20,21,22,23,31,],[13,14,17,25,26,17,28,29,32,]),'EQUALS':([12,25,],[18,-7,]),'DOT':([13,17,],[19,23,]),'COLON':([14,],[20,]),'COMMA':([16,17,28,29,32,],[21,-12,-13,-14,-15,]),'AS':([17,29,],[22,31,]),'STRING':([18,],[24,]),'RPAREN':([26,],[30,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'query':([0,],[1,]),'match_clause':([0,],[2,]),'where_clause':([2,],[4,]),'empty':([2,],[6,]),'node_pattern':([3,],[7,]),'return_clause':([4,],[9,]),'condition':([5,],[11,]),'property_access':([5,],[12,]),'return_items':([10,21,],[15,26,]),}
+_lr_goto_items = {'query':([0,],[1,]),'match_clause':([0,],[2,]),'where_clause':([2,],[4,]),'empty':([2,],[6,]),'node_pattern':([3,],[7,]),'return_clause':([4,],[9,]),'condition':([5,],[11,]),'property_access':([5,],[12,]),'return_items':([10,21,],[15,27,]),'return_item':([10,21,],[16,16,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -35,8 +35,12 @@ _lr_productions = [
   ('condition -> property_access EQUALS STRING','condition',3,'p_condition','cypher_parser.py',36),
   ('property_access -> IDENTIFIER DOT IDENTIFIER','property_access',3,'p_property_access','cypher_parser.py',40),
   ('return_clause -> RETURN return_items','return_clause',2,'p_return_clause','cypher_parser.py',44),
-  ('return_items -> IDENTIFIER','return_items',1,'p_return_items','cypher_parser.py',51),
-  ('return_items -> IDENTIFIER AS IDENTIFIER','return_items',3,'p_return_items','cypher_parser.py',52),
-  ('return_items -> IDENTIFIER COMMA return_items','return_items',3,'p_return_items','cypher_parser.py',53),
-  ('empty -> <empty>','empty',0,'p_empty','cypher_parser.py',62),
+  ('return_clause -> RETURN','return_clause',1,'p_return_clause','cypher_parser.py',45),
+  ('return_items -> return_item','return_items',1,'p_return_items','cypher_parser.py',53),
+  ('return_items -> return_item COMMA return_items','return_items',3,'p_return_items','cypher_parser.py',54),
+  ('return_item -> IDENTIFIER','return_item',1,'p_return_item','cypher_parser.py',61),
+  ('return_item -> IDENTIFIER AS IDENTIFIER','return_item',3,'p_return_item','cypher_parser.py',62),
+  ('return_item -> IDENTIFIER DOT IDENTIFIER','return_item',3,'p_return_item','cypher_parser.py',63),
+  ('return_item -> IDENTIFIER DOT IDENTIFIER AS IDENTIFIER','return_item',5,'p_return_item','cypher_parser.py',64),
+  ('empty -> <empty>','empty',0,'p_empty','cypher_parser.py',75),
 ]

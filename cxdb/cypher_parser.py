@@ -41,32 +41,40 @@ class CypherParser:
         p[0] = PropertyAccess(p[1], p[3])
 
     def p_return_clause(self, p):
-        '''return_clause : RETURN return_items'''
-        items = p[2]
-        if not items:
-            raise CypherSemanticError("RETURN clause must specify at least one return item")
-        p[0] = ReturnClause(items)
+        '''return_clause : RETURN return_items
+                         | RETURN error'''
+        if len(p) == 3 and p[2] == 'error':
+            raise CypherSyntaxError("Incomplete RETURN clause", p.lineno(1), p.lexpos(1), p[1])
+        p[0] = ReturnClause(p[2])
 
     def p_return_items(self, p):
-        '''return_items : IDENTIFIER
-                        | IDENTIFIER AS IDENTIFIER
-                        | IDENTIFIER COMMA return_items'''
+        '''return_items : return_item
+                        | return_item COMMA return_items'''
         if len(p) == 2:
-            p[0] = [ReturnItem(p[1], p[1])]
-        elif len(p) == 4 and p[2] == 'AS':
-            p[0] = [ReturnItem(p[1], p[3])]
-        elif len(p) == 4 and p[2] == ',':
-            p[0] = [ReturnItem(p[1], p[1])] + p[3]
+            p[0] = [p[1]]
+        else:
+            p[0] = [p[1]] + p[3]
 
-    def p_empty(self, p):
-        'empty :'
-        pass
+    def p_return_item(self, p):
+        '''return_item : IDENTIFIER
+                       | IDENTIFIER AS IDENTIFIER
+                       | IDENTIFIER DOT IDENTIFIER
+                       | IDENTIFIER DOT IDENTIFIER AS IDENTIFIER'''
+        if len(p) == 2:
+            p[0] = ReturnItem(p[1], p[1])
+        elif len(p) == 4 and p[2] == 'AS':
+            p[0] = ReturnItem(p[1], p[3])
+        elif len(p) == 4 and p[2] == '.':
+            p[0] = ReturnItem(f"{p[1]}.{p[3]}", f"{p[1]}.{p[3]}")
+        elif len(p) == 6:
+            p[0] = ReturnItem(f"{p[1]}.{p[3]}", p[5])
 
     def p_error(self, p):
         if p:
             raise CypherSyntaxError(f"Syntax error", p.lineno, p.lexpos, p.value)
         else:
             raise CypherSyntaxError("Syntax error at EOF", None, None, None)
+
 
     def parse(self, data):
         try:
@@ -75,6 +83,7 @@ class CypherParser:
             logger.error(f"Lexer error at position {e.position}: {e.message}")
             print(f"Lexer error at position {e.position}: {e.message}")
             print(f"Context:\n{self._get_error_context(data, e.position)}")
+            raise
         except CypherSyntaxError as e:
             if e.line and e.column:
                 logger.error(f"Syntax error at line {e.line}, column {e.column}: {e.message}")
@@ -82,16 +91,19 @@ class CypherParser:
             else:
                 logger.error(f"Syntax error: {e.message}")
                 print(f"Syntax error: {e.message}")
+            raise
         except CypherSemanticError as e:
-            logger.error(f"Semantic error: {e.message}")
-            print(f"Semantic error: {e.message}")
+            logger.error(f"Semantic error: {str(e)}")
+            print(f"Semantic error: {str(e)}")
+            raise
         except CypherParserError as e:
             logger.error(f"Parser error: {str(e)}")
             print(f"Parser error: {str(e)}")
+            raise
         except Exception as e:
             logger.exception("Unexpected error occurred during parsing")
             print(f"Unexpected error: {str(e)}")
-        return None
+            raise
 
     def _get_error_context(self, data, position, context_length=20):
         start = max(0, position - context_length)

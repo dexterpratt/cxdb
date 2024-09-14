@@ -1,7 +1,5 @@
-# tests/test_cypher_parser.py
-
 import pytest
-from cxdb.cypher_parser import CypherParser, Query, MatchClause, WhereClause, ReturnClause
+from cxdb.cypher_parser import CypherParser, Query, MatchClause, WhereClause, ReturnClause, Condition, PropertyAccess, ReturnItem
 from cxdb.cypher_exceptions import CypherLexerError, CypherSyntaxError, CypherSemanticError
 
 @pytest.fixture
@@ -34,6 +32,7 @@ def test_return_with_alias(parser):
     ast = parser.parse(query)
     assert isinstance(ast.return_, ReturnClause)
     assert len(ast.return_.items) == 1
+    assert isinstance(ast.return_.items[0], ReturnItem)
     assert ast.return_.items[0].expression == 'n.name'
     assert ast.return_.items[0].alias == 'name'
 
@@ -44,10 +43,12 @@ def test_lexer_error(parser):
 
 def test_syntax_error(parser):
     query = "MATCH (n:Person) RETURN"
-    with pytest.raises(CypherSyntaxError):
+    with pytest.raises(CypherSyntaxError) as excinfo:
         parser.parse(query)
+    assert "Incomplete RETURN clause" in str(excinfo.value)
 
 def test_semantic_error(parser):
-    query = "MATCH (n:Person) RETURN"
-    with pytest.raises(CypherSemanticError):
+    query = "MATCH (n:Person) RETURN invalid.syntax"
+    with pytest.raises(CypherSemanticError) as excinfo:
         parser.parse(query)
+    assert "Invalid return item" in str(excinfo.value)
