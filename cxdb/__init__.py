@@ -1,17 +1,26 @@
+"""
+CXDB: A lightweight, in-memory graph database that supports basic Cypher operations.
+
+This package provides the core functionality for creating, managing, and querying
+graph databases using a subset of the Cypher query language.
+"""
+
 from .core import CXDB
-__version__ = "0.1.0"
+from .ndex import NDExConnector
+from .cypher_parser import CypherParser
+from .cypher_lexer import CypherLexer
+from .query_executor import CypherQueryExecutor
+from .cypher_exceptions import CypherSyntaxError, CypherSemanticError, CypherLexerError
 
-# Optional: define what gets imported with `from cxdb import *`
-__all__ = ['CXDB']
+__all__ = [
+    'CXDB',
+    'NDExConnector',
+    'CypherParser',
+    'CypherLexer',
+    'CypherQueryExecutor',
+    'CypherSyntaxError',
+    'CypherSemanticError',
+    'CypherLexerError',
+]
 
-# Optional: any initialization code the package needs
-def initialize():
-    # Perform any necessary setup
-    pass
-
-initialize()
-
-# convenience function
-def create_cxdb_instance():
-    """Create and return a new CXDB instance."""
-    return CXDB()
+__version__ = "0.1.1"

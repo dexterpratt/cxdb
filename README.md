@@ -5,3 +5,5 @@ The purpose of CX is to facilitate applications' use of knowledge graphs without
 
 AI agents are a driving use case for CXDB. It is intended to facilitate methods such as GraphRAG or structured representation of goals, plans, actions, agent history, and inter-agent communications.
 
+CXDB uses the NDEx public network repository to store and manage knowledge bases as networks
+

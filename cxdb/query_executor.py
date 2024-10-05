@@ -40,13 +40,13 @@ class CypherQueryExecutor:
         return deleted_count
 
     def _execute_match(self, match, where, return_):
-        matched_nodes = self._find_matching_nodes(match.pattern)
+        matched_nodes = self._find_matching_nodes(match)
         if where:
             matched_nodes = self._apply_where_clause(matched_nodes, where)
         return self._process_return_clause(matched_nodes, return_)
 
-    def _find_matching_nodes(self, pattern):
-        node_type = pattern.label
+    def _find_matching_nodes(self, node_pattern):
+        node_type = node_pattern.label
         return self.db.nodes[self.db.nodes['type'] == node_type]
 
     def _apply_where_clause(self, nodes, where):

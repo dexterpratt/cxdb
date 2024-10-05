@@ -1,4 +1,14 @@
-# cxdb/ndex.py
+"""
+CXDB NDEx Integration Module
+
+This module provides integration between CXDB and NDEx (Network Data Exchange).
+It allows for converting CXDB graphs to CX2 format, uploading them to NDEx,
+and downloading graphs from NDEx into CXDB.
+
+The NDExConnector class in this module serves as the main interface for
+these operations, handling the conversion between CXDB and CX2 formats,
+as well as the communication with the NDEx server.
+"""
 
 from ndex2.cx2 import CX2Network, RawCX2NetworkFactory
 import ndex2.client as nc2
@@ -7,7 +17,30 @@ import io
 from .utils import load_config
 
 class NDExConnector:
+    """
+    NDExConnector facilitates the integration between CXDB and NDEx.
+
+    This class provides methods for converting CXDB graphs to and from CX2 format,
+    uploading graphs to NDEx, and downloading graphs from NDEx.
+
+    Attributes:
+        cxdb (CXDB): The CXDB instance to connect with NDEx.
+        cx2_network (CX2Network): The CX2 representation of the CXDB graph.
+        ndex_uuid (str): The UUID of the network on NDEx.
+        server (str): The NDEx server URL.
+        username (str): The NDEx username.
+        password (str): The NDEx password.
+        ndex (nc2.Ndex2): The NDEx client for API interactions.
+    """
+
     def __init__(self, cxdb, config_path='~/cxdb/config.ini'):
+        """
+        Initialize the NDExConnector with a CXDB instance and NDEx credentials.
+
+        Args:
+            cxdb (CXDB): The CXDB instance to connect with NDEx.
+            config_path (str, optional): Path to the configuration file. Defaults to '~/cxdb/config.ini'.
+        """
         self.cxdb = cxdb
         self.cx2_network = None
         self.ndex_uuid = None
@@ -21,6 +54,15 @@ class NDExConnector:
         self.ndex = nc2.Ndex2(self.server, self.username, self.password)
 
     def to_cx2(self):
+        """
+        Convert the CXDB graph to CX2 format.
+
+        This method creates a new CX2Network or clears the existing one,
+        then populates it with nodes and edges from the CXDB instance.
+
+        Returns:
+            CX2Network: The CX2 representation of the CXDB graph.
+        """
         if self.cx2_network is None:
             self.cx2_network = CX2Network()
         else:
@@ -47,6 +89,21 @@ class NDExConnector:
         return self.cx2_network
 
     def to_ndex(self, name=None, description=None, visibility="PRIVATE"):
+        """
+        Upload the CXDB graph to NDEx.
+
+        This method converts the CXDB graph to CX2 format and then uploads it to NDEx.
+        If a network with the same UUID already exists on NDEx, it will be updated.
+
+        Args:
+            name (str, optional): The name for the network on NDEx. Defaults to None.
+            description (str, optional): A description for the network on NDEx. Defaults to None.
+            visibility (str, optional): The visibility setting for the network on NDEx. 
+                                        Defaults to "PRIVATE".
+
+        Returns:
+            str: The UUID of the uploaded network on NDEx.
+        """
         cx2_network = self.to_cx2()
         if name is not None:
             cx2_network.add_network_attribute('name', name)
@@ -62,18 +119,21 @@ class NDExConnector:
             url = self.ndex.save_new_cx2_network(cx2_network.to_cx2())
             self.ndex_uuid = url.split("/")[-1]
 
-
-        # # Set visibility
-        # if visibility == "PUBLIC":
-        #     #self.ndex.make_network_public(self.ndex_uuid)
-        #     self.ndex.set_network_system_properties(self.ndex_uuid, {"visibility": "PUBLIC"})
-        # elif visibility == "PRIVATE":
-        #     self.ndex.set_network_system_properties(self.ndex_uuid, {"visibility": "PRIVATE"})
-        #     #self.ndex.make_network_private(self.ndex_uuid)
-        
         return self.ndex_uuid
 
     def from_ndex(self, uuid):
+        """
+        Download a network from NDEx and convert it to CXDB format.
+
+        Args:
+            uuid (str): The UUID of the network on NDEx to download.
+
+        Returns:
+            CXDB: The CXDB instance populated with the downloaded network data.
+
+        Raises:
+            Exception: If there's an error downloading the network from NDEx.
+        """
         # Create CX2Network factory
         try:
             client_response = self.ndex.get_network_as_cx2_stream(uuid)
@@ -87,6 +147,18 @@ class NDExConnector:
         return self.cxdb
 
     def from_cx2(self, cx2_network):
+        """
+        Convert a CX2Network to CXDB format.
+
+        This method clears the existing CXDB data and populates it with
+        nodes and edges from the provided CX2Network.
+
+        Args:
+            cx2_network (CX2Network): The CX2Network to convert to CXDB format.
+
+        Returns:
+            CXDB: The CXDB instance populated with data from the CX2Network.
+        """
         self.cxdb.clear()
         self.cx2_network = cx2_network
 
@@ -108,6 +180,12 @@ class NDExConnector:
         return self.cxdb
 
     def clear_cx2(self):
+        """
+        Clear all nodes and edges from the CX2Network.
+
+        This method removes all nodes and edges from the current CX2Network,
+        if it exists, without creating a new CX2Network instance.
+        """
         if self.cx2_network:
             for node_id in list(self.cx2_network.get_nodes()):
                 self.cx2_network.remove_node(node_id)
