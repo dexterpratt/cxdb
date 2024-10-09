@@ -1,67 +1,91 @@
-# tests/test_cypher_parser.py
-
-import pytest
-from cxdb.cypher_parser import CypherParser, MatchClause, CreateClause, DeleteClause
+import unittest
+from cxdb.cypher_parser import CypherParser
 from cxdb.cypher_exceptions import CypherSyntaxError, CypherSemanticError
+from cxdb.cypher_ast import (
+    Query, MatchClause, CreateClause, DeleteClause, ReturnClause,
+    OrderByClause, LimitClause, FunctionCall
+)
 
-@pytest.fixture
-def parser():
-    return CypherParser()
+class TestCypherParser(unittest.TestCase):
+    def setUp(self):
+        self.parser = CypherParser()
 
-def test_simple_match(parser):
-    query = "MATCH (n:Person) RETURN n"
-    result = parser.parse(query)
-    assert isinstance(result, MatchClause)
-    assert result.pattern is not None 
+    def test_simple_match_query(self):
+        query = "MATCH (n:Person) RETURN n"
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 2)
+        self.assertIsInstance(ast.clauses[0], MatchClause)
+        self.assertIsInstance(ast.clauses[1], ReturnClause)
 
-def test_create_clause(parser):
-    query = "CREATE (n:Person)"
-    result = parser.parse(query)
-    assert isinstance(result, CreateClause)
-    assert result.node_pattern is not None
-    assert result.node_pattern.label == 'Person'
+    def test_match_where_query(self):
+        query = "MATCH (n:Person) WHERE n.age > 30 RETURN n.name"
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 2)
+        self.assertIsInstance(ast.clauses[0], MatchClause)
+        self.assertIsNotNone(ast.clauses[0].where)
+        self.assertIsInstance(ast.clauses[1], ReturnClause)
 
-def test_delete_clause(parser):
-    query = "DELETE (n:Person) WHERE n.age > 30"
-    result = parser.parse(query)
-    assert isinstance(result, DeleteClause)
-    assert result.node_pattern is not None
-    assert result.node_pattern.label == 'Person'
-    assert result.where is not None
+    def test_create_query(self):
+        query = "CREATE (n:Person {name: 'John', age: 30})"
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 1)
+        self.assertIsInstance(ast.clauses[0], CreateClause)
 
-def test_return_with_alias(parser):
-    query = "MATCH (n:Person) RETURN n.name AS name"
-    result = parser.parse(query)
-    assert isinstance(result, MatchClause)
-    assert result.return_ is not None
-    assert len(result.return_.items) == 1
-    assert result.return_.items[0].expression == "n.name"
-    assert result.return_.items[0].alias == "name"
+    def test_delete_query(self):
+        query = "MATCH (n:Person) WHERE n.name = 'John' DELETE n"
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 2)
+        self.assertIsInstance(ast.clauses[0], MatchClause)
+        self.assertIsInstance(ast.clauses[1], DeleteClause)
 
-def test_syntax_error_incomplete_return(parser):
-    query = "MATCH (n:Person) RETURN"
-    with pytest.raises(CypherSyntaxError) as excinfo:
-        parser.parse(query)
-    assert "Incomplete RETURN clause" in str(excinfo.value)
+    def test_complex_query(self):
+        query = """
+        MATCH (a:Person)-[:KNOWS]->(b:Person)
+        WHERE a.age > 30 AND b.name = 'Alice'
+        RETURN a.name, b.age
+        ORDER BY a.name
+        LIMIT 10
+        """
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 4)
+        self.assertIsInstance(ast.clauses[0], MatchClause)
+        self.assertIsInstance(ast.clauses[1], ReturnClause)
+        self.assertIsInstance(ast.clauses[2], OrderByClause)
+        self.assertIsInstance(ast.clauses[3], LimitClause)
 
-def test_syntax_error_incomplete_query(parser):
-    query = "MATCH (n:Person)"
-    with pytest.raises(CypherSyntaxError) as excinfo:
-        parser.parse(query)
-    assert "Incomplete query" in str(excinfo.value)
+    def test_function_call(self):
+        query = "MATCH (n:Person) RETURN count(n) AS person_count"
+        ast = self.parser.parse(query)
+        self.assertIsNotNone(ast)
+        self.assertEqual(len(ast.clauses), 2)
+        return_clause = ast.clauses[1]
+        self.assertIsInstance(return_clause.items[0].expression, FunctionCall)
+        self.assertEqual(return_clause.items[0].expression.function_name, 'count')
 
-def test_syntax_error_invalid_token(parser):
-    query = "MATCH (n:Person) RETURN n WHERE"
-    with pytest.raises(CypherSyntaxError) as excinfo:
-        parser.parse(query)
-    assert "Syntax error at 'WHERE'" in str(excinfo.value)
+    def test_syntax_error(self):
+        query = "MATCH (n:Person) RETURN n,"  # Missing expression after comma
+        with self.assertRaises(CypherSyntaxError):
+            self.parser.parse(query)
 
-def test_semantic_error(parser):
-    query = "MATCH (n:Person) RETURN invalid.syntax"
-    result = parser.parse(query)
-    # Since we're not implementing semantic error checking in the parser,
-    # we'll assert that the query is parsed without raising an exception
-    assert isinstance(result, MatchClause)
-    assert result.return_ is not None
-    assert len(result.return_.items) == 1
-    assert result.return_.items[0].expression == "invalid.syntax"
+    def test_semantic_error_undefined_identifier(self):
+        query = "MATCH (n:Person) RETURN m.name"  # 'm' is not defined
+        with self.assertRaises(CypherSemanticError):
+            self.parser.parse(query)
+
+    def test_semantic_error_type_mismatch(self):
+        query = "MATCH (n:Person) WHERE n.age > 'thirty' RETURN n"  # Comparing int with string
+        with self.assertRaises(CypherSemanticError):
+            self.parser.parse(query)
+
+    def test_semantic_error_unknown_function(self):
+        query = "MATCH (n:Person) RETURN unknown_func(n.name)"
+        with self.assertRaises(CypherSemanticError):
+            self.parser.parse(query)
+
+if __name__ == '__main__':
+    unittest.main()

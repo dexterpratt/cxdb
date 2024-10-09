@@ -29,7 +29,8 @@ class CypherLexer:
 
     tokens = [
         'IDENTIFIER', 'STRING', 'NUMBER',
-        'LPAREN', 'RPAREN', 'COLON', 'COMMA', 'DOT', 'EQUALS',
+        'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
+        'COLON', 'COMMA', 'DOT', 'EQUALS', 'DASH', 'ARROW',
         'GT', 'LT', 'GE', 'LE', 'NE'
     ]
 
@@ -39,7 +40,19 @@ class CypherLexer:
         'RETURN': 'RETURN',
         'CREATE': 'CREATE',
         'DELETE': 'DELETE',
-        'AS': 'AS'
+        'DETACH': 'DETACH',
+        'AS': 'AS',
+        'ORDER': 'ORDER',
+        'BY': 'BY',
+        'LIMIT': 'LIMIT',
+        'DISTINCT': 'DISTINCT',
+        'AND': 'AND',
+        'OR': 'OR',
+        'IS': 'IS',
+        'NULL': 'NULL',
+        'NOT': 'NOT',
+        'ASC': 'ASC',
+        'DESC': 'DESC'
     }
 
     tokens += list(reserved.values())
@@ -47,10 +60,16 @@ class CypherLexer:
     # Simple tokens
     t_LPAREN = r'\('
     t_RPAREN = r'\)'
+    t_LBRACE = r'\{'
+    t_RBRACE = r'\}'
+    t_LBRACKET = r'\['
+    t_RBRACKET = r'\]'
     t_COLON = r':'
     t_COMMA = r','
     t_DOT = r'\.'
     t_EQUALS = r'='
+    t_DASH = r'-'
+    t_ARROW = r'->'
     t_GT = r'>'
     t_LT = r'<'
     t_GE = r'>='
@@ -59,76 +78,34 @@ class CypherLexer:
 
     def t_IDENTIFIER(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
-        """
-        Rule for identifiers and reserved keywords.
-
-        Matches alphanumeric strings starting with a letter or underscore.
-        Checks if the matched string is a reserved keyword.
-
-        Args:
-            t (ply.lex.LexToken): The token object.
-
-        Returns:
-            ply.lex.LexToken: The processed token.
-        """
         t.type = self.reserved.get(t.value.upper(), 'IDENTIFIER')
         return t
 
     def t_STRING(self, t):
         r"'[^']*'"
-        """
-        Rule for string literals.
-
-        Matches strings enclosed in single quotes.
-        Removes the enclosing quotes from the token value.
-
-        Args:
-            t (ply.lex.LexToken): The token object.
-
-        Returns:
-            ply.lex.LexToken: The processed token.
-        """
         t.value = t.value[1:-1]  # Remove quotes
         return t
 
     def t_NUMBER(self, t):
-        r'\d+'
-        """
-        Rule for numeric literals.
-
-        Matches one or more digits and converts the value to an integer.
-
-        Args:
-            t (ply.lex.LexToken): The token object.
-
-        Returns:
-            ply.lex.LexToken: The processed token.
-        """
-        t.value = int(t.value)
+        r'\d+(\.\d+)?'
+        t.value = float(t.value) if '.' in t.value else int(t.value)
         return t
 
     # Ignored characters (spaces and tabs)
-    t_ignore = ' \t\n'
+    t_ignore = ' \t'
+
+    def t_newline(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
 
     def t_error(self, t):
-        """
-        Error handling function for illegal characters.
-
-        Args:
-            t (ply.lex.LexToken): The token object where the error occurred.
-
-        Raises:
-            CypherLexerError: If an illegal character is encountered.
-        """
-        raise CypherLexerError(f"Illegal character '{t.value[0]}'", t.lexpos)
+        raise CypherLexerError(f"Illegal character '{t.value[0]}'", t.lexer.lineno, t.lexpos)
 
     def build(self, **kwargs):
-        """
-        Build the lexer.
-
-        This method creates the PLY lexer object based on the defined rules.
-
-        Args:
-            **kwargs: Additional keyword arguments to pass to ply.lex.lex().
-        """
         self.lexer = lex.lex(module=self, **kwargs)
+
+    def input(self, data):
+        self.lexer.input(data)
+
+    def token(self):
+        return self.lexer.token()
