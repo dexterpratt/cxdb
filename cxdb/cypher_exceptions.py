@@ -1,32 +1,30 @@
-# cxdb/cypher_exceptions.py
+"""
+Cypher Exceptions Module
 
-class CypherParserError(Exception):
-    """Base class for exceptions in the Cypher parser."""
+This module defines custom exceptions for the Cypher query language implementation.
+"""
+
+class CypherError(Exception):
+    """Base class for Cypher-related exceptions."""
     pass
 
-class CypherLexerError(CypherParserError):
-    """Exception raised for errors in the lexical analysis."""
-    def __init__(self, message, position):
+class CypherSyntaxError(CypherError):
+    """Exception raised for syntax errors in Cypher queries."""
+    def __init__(self, message, lineno=None, column=None, token_type=None):
         self.message = message
-        self.position = position
-        super().__init__(f"{message} at position {position}")
-
-class CypherSyntaxError(CypherParserError):
-    """Exception raised for syntax errors."""
-    def __init__(self, message, line=None, column=None, token=None):
-        self.message = message
-        self.line = line
+        self.lineno = lineno
         self.column = column
-        self.token = token
-        error_message = message
-        if line is not None and column is not None:
-            error_message += f" at line {line}, column {column}"
-        if token is not None:
-            error_message += f" (token: {token})"
-        super().__init__(error_message)
+        self.token_type = token_type
+        super().__init__(self.message)
 
-class CypherSemanticError(CypherParserError):
-    """Exception raised for semantic errors."""
-    def __init__(self, message):
+class CypherSemanticError(CypherError):
+    """Exception raised for semantic errors in Cypher queries."""
+    pass
+
+class CypherLexerError(CypherError):
+    """Exception raised for lexer errors in Cypher queries."""
+    def __init__(self, message, lineno=None, column=None):
         self.message = message
-        super().__init__(message)
+        self.lineno = lineno
+        self.column = column
+        super().__init__(self.message)

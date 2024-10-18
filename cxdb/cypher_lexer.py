@@ -31,8 +31,12 @@ class CypherLexer:
         'IDENTIFIER', 'STRING', 'NUMBER',
         'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
         'COLON', 'COMMA', 'DOT', 'EQUALS', 'DASH', 'ARROW',
-        'GT', 'LT', 'GE', 'LE', 'NE'
+        'GT', 'LT', 'GE', 'LE', 'NE',
+        'STARTS_WITH', 'PLUS', 'CONTAINS', 'ENDS_WITH'
     ]
+
+    t_CONTAINS = r'CONTAINS'
+    t_ENDS_WITH = r'ENDS\s+WITH'
 
     reserved = {
         'MATCH': 'MATCH',
@@ -52,7 +56,9 @@ class CypherLexer:
         'NULL': 'NULL',
         'NOT': 'NOT',
         'ASC': 'ASC',
-        'DESC': 'DESC'
+        'DESC': 'DESC',
+        'STARTS': 'STARTS',
+        'WITH': 'WITH'
     }
 
     tokens += list(reserved.values())
@@ -75,6 +81,11 @@ class CypherLexer:
     t_GE = r'>='
     t_LE = r'<='
     t_NE = r'<>'
+    t_PLUS = r'\+'
+
+    def t_STARTS_WITH(self, t):
+        r'STARTS\s+WITH'
+        return t
 
     def t_IDENTIFIER(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'

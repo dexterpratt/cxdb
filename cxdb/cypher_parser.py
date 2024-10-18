@@ -38,13 +38,11 @@ class CypherParser:
             self.semantic_analyzer.check_semantics(ast)
             return ast
         except CypherSyntaxError as e:
-            # Handle syntax errors
-            print(f"Syntax Error: {str(e)}")
-            return None
+            # Raise syntax errors
+            raise CypherSyntaxError(f"Syntax Error: {str(e)}")
         except CypherSemanticError as e:
-            # Handle semantic errors
-            print(f"Semantic Error: {str(e)}")
-            return None
+            # Raise semantic errors
+            raise CypherSemanticError(f"Semantic Error: {str(e)}")
 
 # Export CypherParser and all AST classes
 __all__ = ['CypherParser', 'Query', 'MatchClause', 'CreateClause', 'DeleteClause',

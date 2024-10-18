@@ -62,6 +62,19 @@ class TestNDExIntegration(unittest.TestCase):
                 property_counts[column] = len(df)
 
         return dict(sorted(property_counts.items(), key=lambda x: x[1], reverse=True))
+    
+    def test_basic_graph_structure(self):
+        self.ndex_connector.from_ndex(self.test_uuid)
+        
+        print("\nBasic Graph Structure:")
+        print(f"Number of nodes: {len(self.cxdb.nodes)}")
+        print(f"Number of edges: {len(self.cxdb.edges)}")
+        
+        print("\nNode types:")
+        print(self.cxdb.nodes['type'].value_counts())
+        
+        print("\nEdge types:")
+        print(self.cxdb.edges['relationship'].value_counts())
 
     def test_cypher_query_on_imported_data(self):
         self.ndex_connector.from_ndex(self.test_uuid)
@@ -86,18 +99,7 @@ class TestNDExIntegration(unittest.TestCase):
         except Exception as e:
             self.fail(f"Cypher query execution failed: {str(e)}\nQuery: {query}")
 
-    def test_basic_graph_structure(self):
-        self.ndex_connector.from_ndex(self.test_uuid)
-        
-        print("\nBasic Graph Structure:")
-        print(f"Number of nodes: {len(self.cxdb.nodes)}")
-        print(f"Number of edges: {len(self.cxdb.edges)}")
-        
-        print("\nNode types:")
-        print(self.cxdb.nodes['type'].value_counts())
-        
-        print("\nEdge types:")
-        print(self.cxdb.edges['relationship'].value_counts())
+
 
 if __name__ == '__main__':
     unittest.main()
