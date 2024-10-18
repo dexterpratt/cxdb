@@ -85,7 +85,7 @@ class CypherSemanticAnalyzer:
         return False
 
     def is_string_literal(self, value):
-        return isinstance(value, str) and value.startswith("'") and value.endswith("'")
+        return isinstance(value, str) and not "." in value #value.startswith("'") and value.endswith("'")
 
     def check_type_match(self, node):
         """
@@ -124,7 +124,10 @@ class CypherSemanticAnalyzer:
         elif isinstance(value, str):
             if self.is_property_access(value):
                 return 'PROPERTY'
-            return 'STRING'
+            elif self.is_string_literal(value):
+                return 'STRING'
+            else:
+                return 'IDENTIFIER'  # This could be a variable or a label
         elif hasattr(value, 'value'):  # For Expression nodes
             if isinstance(value.value, tuple) and value.value[0] == 'PLUS':
                 left_type = self.get_type(value.value[1])
@@ -156,12 +159,12 @@ class CypherSemanticAnalyzer:
         left_type = self.get_type(condition.left)
         right_type = self.get_type(condition.right)
 
-        # Allow comparisons between properties and literals
-        if left_type == 'PROPERTY' or right_type == 'PROPERTY':
+        # Allow comparisons between properties, literals, and identifiers
+        if 'PROPERTY' in (left_type, right_type) or 'IDENTIFIER' in (left_type, right_type):
             return
 
         # Allow comparisons between ANY and any other type
-        if left_type == 'ANY' or right_type == 'ANY':
+        if 'ANY' in (left_type, right_type):
             return
 
         if left_type != right_type:
@@ -171,17 +174,14 @@ class CypherSemanticAnalyzer:
         valid_operators = {
             'INTEGER': ['=', '<>', '<', '<=', '>', '>='],
             'FLOAT': ['=', '<>', '<', '<=', '>', '>='],
-            'STRING': ['=', '<>', 'STARTS WITH', 'ENDS WITH', 'CONTAINS'],
+            'STRING': ['=', '<>', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS'],
             'BOOLEAN': ['=', '<>'],
-            'PROPERTY': ['=', '<>', '<', '<=', '>', '>=', 'STARTS WITH', 'ENDS WITH', 'CONTAINS'],
-            'ANY': ['=', '<>', '<', '<=', '>', '>=', 'STARTS WITH', 'ENDS WITH', 'CONTAINS']
+            'PROPERTY': ['=', '<>', '<', '<=', '>', '>=', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS'],
+            'IDENTIFIER': ['=', '<>', '<', '<=', '>', '>=', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS'],
+            'ANY': ['=', '<>', '<', '<=', '>', '>=', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS']
         }
 
         if condition.operator not in valid_operators.get(left_type, []) and condition.operator not in valid_operators.get(right_type, []):
             raise CypherSemanticError(f"Invalid operator '{condition.operator}' for types {left_type} and {right_type}")
-
-        # Special check for 'STARTS WITH' operator
-        if condition.operator == 'STARTS WITH' and right_type != 'STRING':
-            raise CypherSemanticError(f"'STARTS WITH' operator requires a string argument, got {right_type}")
 
     # Add more semantic analysis methods as needed

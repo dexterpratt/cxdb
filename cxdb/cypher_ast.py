@@ -116,13 +116,14 @@ class Expression:
 
     def check_semantics(self, analyzer):
         if isinstance(self.value, str):
-            if analyzer.is_property_access(self.value):
+            if analyzer.is_string_literal(self.value):
+                return  # String literals are always valid
+            elif analyzer.is_property_access(self.value):
                 entity, prop = self.value.split('.', 1)
                 if not analyzer.symbol_exists(entity):
                     raise CypherSemanticError(f"Undefined identifier '{entity}'")
-            elif not analyzer.is_string_literal(self.value):
-                if not analyzer.symbol_exists(self.value):
-                    raise CypherSemanticError(f"Undefined identifier '{self.value}'")
+            elif not analyzer.symbol_exists(self.value):
+                raise CypherSemanticError(f"Undefined identifier '{self.value}'")
         elif isinstance(self.value, (int, float, bool)):
             # These are literals, no need to check
             pass

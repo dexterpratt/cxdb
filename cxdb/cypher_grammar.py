@@ -151,21 +151,20 @@ class CypherGrammar:
 
     def p_expression(self, p):
         """expression : IDENTIFIER
-                    | IDENTIFIER DOT IDENTIFIER
-                    | function_call
-                    | STRING
-                    | NUMBER
-                    | expression PLUS expression
-                    | expression CONTAINS expression
-                    | expression ENDS_WITH expression"""
+                      | IDENTIFIER DOT IDENTIFIER
+                      | function_call
+                      | STRING
+                      | NUMBER
+                      | expression PLUS expression
+                      | expression CONTAINS expression
+                      | expression ENDS_WITH expression
+                      | expression STARTS_WITH expression"""
         if len(p) == 2:
             p[0] = Expression(p[1])
         elif len(p) == 4:
             if p[2] == '.':
                 p[0] = Expression(f"{p[1]}.{p[3]}")
-            elif p[2] in ('PLUS', 'CONTAINS', 'ENDS_WITH'):
-                p[0] = Expression((p[2], p[1], p[3]))
-            else:
+            elif p[2] in ('PLUS', 'CONTAINS', 'ENDS_WITH', 'STARTS_WITH'):
                 p[0] = Expression((p[2], p[1], p[3]))
         else:
             p[0] = p[1]
@@ -191,13 +190,17 @@ class CypherGrammar:
     def p_condition(self, p):
         """condition : expression comparison_operator expression
                      | expression IS NULL
-                     | expression IS NOT NULL"""
+                     | expression IS NOT NULL
+                     | expression STARTS_WITH expression
+                     | expression ENDS_WITH expression"""
         if len(p) == 4:
             if p[2] == 'IS':
                 p[0] = Condition(p[1], 'IS NULL', None)
+            elif p[2] in ('STARTS WITH', 'ENDS WITH'):
+                p[0] = Condition(p[1], p[2], p[3])
             else:
                 p[0] = Condition(p[1], p[2], p[3])
-        else:
+        elif len(p) == 5:
             p[0] = Condition(p[1], 'IS NOT NULL', None)
 
     def p_comparison_operator(self, p):
@@ -207,7 +210,7 @@ class CypherGrammar:
                                | GE
                                | LE
                                | NE
-                               | STARTS_WITH"""
+                               | CONTAINS"""
         p[0] = p[1]
 
     def p_return_clause(self, p):

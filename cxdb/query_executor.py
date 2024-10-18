@@ -1,7 +1,7 @@
 # cxdb/query_executor.py
-
 from cxdb.cypher_parser import CypherParser
 from cxdb.cypher_ast import *
+import uuid
 
 class CypherQueryExecutor:
     def __init__(self, db):
@@ -53,13 +53,15 @@ class CypherQueryExecutor:
         created_elements = []
         for element in create_clause.pattern:
             if isinstance(element, NodePattern):
-                node_id = self.db.add_node(f"Node_{self.db.next_node_id}", element.label, element.properties)
+                unique_name = f"{element.label}_{uuid.uuid4().hex[:8]}"
+                node_id = self.db.add_node(unique_name, element.label, element.properties)
                 created_elements.append(('node', node_id))
             elif isinstance(element, RelationshipPattern):
-                start_node = created_elements[-1][1]
-                end_node = created_elements[-2][1] if len(created_elements) > 1 else None
-                rel_id = self.db.add_relationship(start_node, end_node, element.label, element.properties)
-                created_elements.append(('relationship', rel_id))
+                start_node = created_elements[-2][1] if len(created_elements) > 1 else None
+                end_node = created_elements[-1][1]
+                if start_node is not None and end_node is not None:
+                    rel_id = self.db.add_edge(start_node, end_node, element.type, element.properties)
+                    created_elements.append(('relationship', rel_id))
         return created_elements
 
     def _execute_delete(self, delete_clause):
@@ -71,7 +73,7 @@ class CypherQueryExecutor:
             element_id = self._evaluate_expression(expr)
             if element_id:
                 if delete_clause.detach:
-                    self.db.delete_node_with_relationships(element_id)
+                    self.db.delete_node(element_id)
                 else:
                     self.db.delete_node(element_id)
                 deleted_count += 1
@@ -130,29 +132,33 @@ class CypherQueryExecutor:
         """
         Find nodes matching the given node pattern.
         """
-        return [node for node in self.db.nodes if self._node_matches_pattern(node, node_pattern)]
+        return [node for node in self.db.nodes.to_dict('records') if self._node_matches_pattern(node, node_pattern)]
 
     def _find_matching_relationships(self, rel_pattern):
         """
         Find relationships matching the given relationship pattern.
         """
-        return [rel for rel in self.db.relationships if self._relationship_matches_pattern(rel, rel_pattern)]
+        return [rel for rel in self.db.edges.to_dict('records') if self._relationship_matches_pattern(rel, rel_pattern)]
 
     def _node_matches_pattern(self, node, pattern):
         """
         Check if a node matches the given pattern.
         """
-        if pattern.label and node['type'] != pattern.label:
+        if pattern.label and node.get('type') != pattern.label:
             return False
-        return all(node['properties'].get(key) == value for key, value in pattern.properties.items())
+        if pattern.properties:
+            return all(node.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+        return True
 
     def _relationship_matches_pattern(self, rel, pattern):
         """
         Check if a relationship matches the given pattern.
         """
-        if pattern.label and rel['type'] != pattern.label:
+        if pattern.label and rel.get('relationship') != pattern.label:
             return False
-        return all(rel['properties'].get(key) == value for key, value in pattern.properties.items())
+        if pattern.properties:
+            return all(rel.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+        return True
 
     def _combine_matched_elements(self, matched_elements):
         """
@@ -166,10 +172,10 @@ class CypherQueryExecutor:
         for node in matched_elements[0]:
             path = [node]
             for i in range(1, len(matched_elements), 2):
-                rel = next((r for r in matched_elements[i] if r['start_node'] == node['id']), None)
+                rel = next((r for r in matched_elements[i] if r['source_id'] == node['id']), None)
                 if rel:
                     path.append(rel)
-                    next_node = next((n for n in matched_elements[i+1] if n['id'] == rel['end_node']), None)
+                    next_node = next((n for n in matched_elements[i+1] if n['id'] == rel['target_id']), None)
                     if next_node:
                         path.append(next_node)
                         node = next_node
@@ -188,6 +194,7 @@ class CypherQueryExecutor:
         """
         return [element for element in elements if self._evaluate_expression(where.boolean_expr, element)]
 
+ 
     def _evaluate_expression(self, expr, context=None):
         """
         Evaluate an expression in the given context.
@@ -198,6 +205,8 @@ class CypherQueryExecutor:
                     entity, prop = expr.value.split('.')
                     return self._get_element_property(context, entity, prop)
                 return expr.value.strip("'")  # Remove quotes from string literals
+            elif isinstance(expr.value, (int, float)):
+                return expr.value
             elif isinstance(expr.value, tuple):
                 operator, left, right = expr.value
                 left_value = self._evaluate_expression(left, context)
@@ -206,8 +215,10 @@ class CypherQueryExecutor:
                     return left_value + right_value
                 elif operator == 'CONTAINS':
                     return right_value in left_value
-                elif operator == 'ENDS_WITH':
+                elif operator == 'ENDS WITH':
                     return left_value.endswith(right_value)
+                elif operator == 'STARTS WITH':
+                    return left_value.startswith(right_value)
             return expr.value
         elif isinstance(expr, LogicalExpression):
             left = self._evaluate_expression(expr.left, context)
@@ -225,6 +236,12 @@ class CypherQueryExecutor:
                 return left > right
             elif expr.operator == '<':
                 return left < right
+            elif expr.operator == '>=':
+                return left >= right
+            elif expr.operator == '<=':
+                return left <= right
+            elif expr.operator == '<>':
+                return left != right
         return None
 
     def _get_element_property(self, element, entity, prop):
@@ -238,3 +255,23 @@ class CypherQueryExecutor:
                 if item.get('id') == entity:
                     return item.get('properties', {}).get(prop)
         return None
+
+    def _node_matches_pattern(self, node, pattern):
+        """
+        Check if a node matches the given pattern.
+        """
+        if pattern.label and node.get('label') != pattern.label:
+            return False
+        if pattern.properties:
+            return all(node.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+        return True
+
+    def _relationship_matches_pattern(self, rel, pattern):
+        """
+        Check if a relationship matches the given pattern.
+        """
+        if pattern.type and rel.get('type') != pattern.type:
+            return False
+        if pattern.properties:
+            return all(rel.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+        return True
