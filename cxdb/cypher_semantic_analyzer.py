@@ -74,6 +74,8 @@ class CypherSemanticAnalyzer:
             raise CypherSemanticError(f"Unknown function '{function_call.function_name}'")
         return self.built_in_functions[function_call.function_name]
 
+
+
     def is_property_access(self, value):
         """
         Check if a value represents a property access.
@@ -83,9 +85,10 @@ class CypherSemanticAnalyzer:
         elif hasattr(value, 'value'):  # For Expression objects
             return self.is_property_access(value.value)
         return False
-
+    
     def is_string_literal(self, value):
-        return isinstance(value, str) and not "." in value #value.startswith("'") and value.endswith("'")
+        # Updated to handle email addresses and other complex string literals
+        return isinstance(value, str) and not self.is_property_access(value)
 
     def check_type_match(self, node):
         """
@@ -127,7 +130,7 @@ class CypherSemanticAnalyzer:
             elif self.is_string_literal(value):
                 return 'STRING'
             else:
-                return 'IDENTIFIER'  # This could be a variable or a label
+                return self.get_symbol_type(value) if self.symbol_exists(value) else 'IDENTIFIER'
         elif hasattr(value, 'value'):  # For Expression nodes
             if isinstance(value.value, tuple) and value.value[0] == 'PLUS':
                 left_type = self.get_type(value.value[1])
@@ -160,7 +163,7 @@ class CypherSemanticAnalyzer:
         right_type = self.get_type(condition.right)
 
         # Allow comparisons between properties, literals, and identifiers
-        if 'PROPERTY' in (left_type, right_type) or 'IDENTIFIER' in (left_type, right_type):
+        if 'PROPERTY' in (left_type, right_type) or 'IDENTIFIER' in (left_type, right_type) or 'STRING' in (left_type, right_type):
             return
 
         # Allow comparisons between ANY and any other type

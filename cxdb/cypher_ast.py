@@ -128,10 +128,11 @@ class Expression:
             # These are literals, no need to check
             pass
         elif isinstance(self.value, tuple):
-            # Handle operators like CONTAINS and ENDS WITH
+            # Handle operators like CONTAINS, ENDS WITH, and comparisons
             operator, left, right = self.value
-            if operator in ('CONTAINS', 'ENDS_WITH'):
+            if isinstance(left, Expression):
                 left.check_semantics(analyzer)
+            if isinstance(right, Expression):
                 right.check_semantics(analyzer)
         elif hasattr(self.value, 'check_semantics'):
             self.value.check_semantics(analyzer)

@@ -78,24 +78,24 @@ class CypherQueryExecutor:
                     self.db.delete_node(element_id)
                 deleted_count += 1
         return deleted_count
-
+    
     def _execute_return(self, return_clause, input_data):
         """
         Execute a RETURN clause.
         """
         result = []
-        for item in return_clause.items:
-            if isinstance(item.expression, str):
-                if '.' in item.expression:
-                    entity, prop = item.expression.split('.')
-                    for element in input_data:
-                        result.append({item.alias or item.expression: self._get_element_property(element, entity, prop)})
+        for element in input_data:
+            row = {}
+            for item in return_clause.items:
+                if isinstance(item.expression, Expression):
+                    if '.' in item.expression.value:
+                        _, prop = item.expression.value.split('.')
+                        row[item.alias or item.expression.value] = self._get_element_property(element, prop)
+                    else:
+                        row[item.alias or item.expression.value] = element.get(item.expression.value)
                 else:
-                    for element in input_data:
-                        result.append({item.alias or item.expression: element.get(item.expression)})
-            else:
-                for element in input_data:
-                    result.append({item.alias or 'result': self._evaluate_expression(item.expression, element)})
+                    row[item.alias or 'result'] = self._evaluate_expression(item.expression, element)
+            result.append(row)
         return result
 
     def _execute_order_by(self, order_by_clause, input_data):
@@ -132,32 +132,34 @@ class CypherQueryExecutor:
         """
         Find nodes matching the given node pattern.
         """
-        return [node for node in self.db.nodes.to_dict('records') if self._node_matches_pattern(node, node_pattern)]
+        nodes = self.db.nodes
+        return [node for _, node in nodes.iterrows() if self._node_matches_pattern(node, node_pattern)]
 
     def _find_matching_relationships(self, rel_pattern):
         """
         Find relationships matching the given relationship pattern.
         """
-        return [rel for rel in self.db.edges.to_dict('records') if self._relationship_matches_pattern(rel, rel_pattern)]
+        edges = self.db.edges
+        return [edge for _, edge in edges.iterrows() if self._relationship_matches_pattern(edge, rel_pattern)]
 
     def _node_matches_pattern(self, node, pattern):
         """
         Check if a node matches the given pattern.
         """
-        if pattern.label and node.get('type') != pattern.label:
+        if pattern.label and node['type'] != pattern.label:
             return False
         if pattern.properties:
-            return all(node.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+            return all(node['properties'].get(key) == value for key, value in pattern.properties.items())
         return True
 
     def _relationship_matches_pattern(self, rel, pattern):
         """
         Check if a relationship matches the given pattern.
         """
-        if pattern.label and rel.get('relationship') != pattern.label:
+        if pattern.type and rel['relationship'] != pattern.type:
             return False
         if pattern.properties:
-            return all(rel.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
+            return all(rel['properties'].get(key) == value for key, value in pattern.properties.items())
         return True
 
     def _combine_matched_elements(self, matched_elements):
@@ -194,16 +196,15 @@ class CypherQueryExecutor:
         """
         return [element for element in elements if self._evaluate_expression(where.boolean_expr, element)]
 
- 
     def _evaluate_expression(self, expr, context=None):
         """
         Evaluate an expression in the given context.
         """
         if isinstance(expr, Expression):
             if isinstance(expr.value, str):
-                if context and '.' in expr.value:
+                if context is not None and '.' in expr.value:
                     entity, prop = expr.value.split('.')
-                    return self._get_element_property(context, entity, prop)
+                    return self._get_element_property(context, prop)
                 return expr.value.strip("'")  # Remove quotes from string literals
             elif isinstance(expr.value, (int, float)):
                 return expr.value
@@ -244,34 +245,8 @@ class CypherQueryExecutor:
                 return left != right
         return None
 
-    def _get_element_property(self, element, entity, prop):
+    def _get_element_property(self, element, prop):
         """
         Get a property value from an element (node or relationship).
         """
-        if isinstance(element, dict):
-            return element.get('properties', {}).get(prop)
-        elif isinstance(element, list):  # For path results
-            for item in element:
-                if item.get('id') == entity:
-                    return item.get('properties', {}).get(prop)
-        return None
-
-    def _node_matches_pattern(self, node, pattern):
-        """
-        Check if a node matches the given pattern.
-        """
-        if pattern.label and node.get('label') != pattern.label:
-            return False
-        if pattern.properties:
-            return all(node.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
-        return True
-
-    def _relationship_matches_pattern(self, rel, pattern):
-        """
-        Check if a relationship matches the given pattern.
-        """
-        if pattern.type and rel.get('type') != pattern.type:
-            return False
-        if pattern.properties:
-            return all(rel.get('properties', {}).get(key) == value for key, value in pattern.properties.items())
-        return True
+        return element['properties'].get(prop)
